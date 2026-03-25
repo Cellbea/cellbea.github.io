@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sheepkeeper</title>
+</head>
+<body>
+ 
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{--gold:#d4a847;--gold2:#8a6030;--bg:#0d0a07;--bg2:rgba(20,12,5,0.88);--bg3:rgba(15,8,3,0.72);--border:rgba(90,55,20,0.35);--text:#e8d5a3;--muted:#8a7355;--red:#c0392b;--redbg:rgba(192,57,43,0.13);--blue:#3a7ad4;--bluebg:rgba(58,122,212,0.13);}
+html,body{background:var(--bg);color:var(--text);font-family:'Crimson Text',Georgia,serif;min-height:100vh;}
+.app{display:flex;min-height:100vh;}
+.sidebar{width:200px;min-width:200px;background:rgba(8,5,2,0.97);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:10;transition:width .3s;}
+.sidebar.collapsed{width:52px;min-width:52px;}
+.sidebar-logo{padding:1rem 1rem .7rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:.6rem;overflow:hidden;white-space:nowrap;}
+.logo-icon{font-size:1.3rem;flex-shrink:0;}
+.logo-text{font-family:'Cinzel',serif;font-size:.82rem;color:var(--gold);letter-spacing:.1em;transition:opacity .2s;}
+.sidebar.collapsed .logo-text{opacity:0;width:0;}
+.sidebar-toggle{margin:.4rem auto;background:none;border:1px solid var(--border);color:var(--muted);width:30px;height:20px;border-radius:4px;cursor:pointer;font-size:.65rem;display:flex;align-items:center;justify-content:center;}
+.sidebar-toggle:hover{border-color:var(--gold);color:var(--gold);}
+.nav-list{list-style:none;padding:.4rem 0;flex:1;overflow:hidden;}
+.nav-item{display:flex;align-items:center;gap:.7rem;padding:.52rem 1rem;cursor:pointer;transition:all .15s;white-space:nowrap;border-left:2px solid transparent;overflow:hidden;}
+.nav-item:hover{background:rgba(139,90,43,.12);border-left-color:var(--gold2);}
+.nav-item.active{background:rgba(212,168,71,.1);border-left-color:var(--gold);}
+.nav-icon{font-size:.9rem;flex-shrink:0;width:20px;text-align:center;}
+.nav-label{font-family:'Cinzel',serif;font-size:.67rem;color:var(--muted);letter-spacing:.07em;transition:opacity .2s;}
+.nav-item.active .nav-label{color:var(--gold);}
+.sidebar.collapsed .nav-label{opacity:0;width:0;}
+.sidebar.collapsed .nav-item{padding:.52rem 0;justify-content:center;}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.topbar{padding:.55rem 1.3rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:rgba(8,5,2,.6);}
+.topbar-title{font-family:'Cinzel',serif;font-size:.85rem;color:var(--gold);letter-spacing:.15em;}
+.topbar-sub{font-size:.75rem;color:var(--muted);font-style:italic;}
+.page{flex:1;overflow-y:auto;padding:1.2rem;}
+.sec-title{font-family:'Cinzel',serif;font-size:.93rem;color:var(--gold2);letter-spacing:.17em;text-transform:uppercase;margin-bottom:1rem;padding-bottom:.4rem;border-bottom:1px solid var(--border);}
+.btn{font-family:'Cinzel',serif;border-radius:5px;cursor:pointer;transition:all .2s;letter-spacing:.08em;}
+.btn-gold{background:rgba(139,90,43,.22);border:1px solid rgba(212,168,71,.38);color:var(--gold);padding:.42rem 1rem;font-size:.68rem;}
+.btn-gold:hover{background:rgba(212,168,71,.15);}
+.btn-red{background:var(--redbg);border:1px solid rgba(192,57,43,.38);color:var(--red);padding:.28rem .6rem;font-size:.63rem;}
+.btn-red:hover{background:rgba(192,57,43,.28);}
+.btn-blue{background:var(--bluebg);border:1px solid rgba(58,122,212,.38);color:#88aaee;padding:.28rem .6rem;font-size:.63rem;}
+.btn-blue:hover{background:rgba(58,122,212,.22);}
+.btn-ghost{background:none;border:1px dashed var(--border);border-radius:7px;padding:.75rem;width:100%;text-align:center;font-family:'Cinzel',serif;font-size:.7rem;color:var(--muted);cursor:pointer;transition:all .2s;letter-spacing:.1em;}
+.btn-ghost:hover{border-color:var(--gold2);color:var(--gold2);}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:200;display:flex;align-items:center;justify-content:center;padding:1rem;}
+.modal-box{background:#110d08;border:1px solid var(--border);border-radius:12px;padding:1.6rem 1.8rem;max-width:460px;width:100%;max-height:90vh;overflow-y:auto;}
+.modal-title{font-family:'Cinzel',serif;font-size:1rem;color:var(--gold);margin-bottom:.5rem;letter-spacing:.1em;}
+.modal-desc{color:var(--muted);font-size:.88rem;font-style:italic;margin-bottom:1rem;line-height:1.5;}
+.modal-btns{display:flex;gap:.6rem;justify-content:flex-end;margin-top:1rem;}
+.modal-box.danger{border-color:rgba(192,57,43,.4);}
+.modal-box.danger .modal-title{color:var(--red);}
+.field-group{margin-bottom:.7rem;}
+.field-label{font-family:'Cinzel',serif;font-size:.6rem;color:var(--gold2);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.22rem;}
+.field-input{width:100%;background:rgba(10,6,2,.8);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:'Crimson Text',serif;font-size:.9rem;padding:.35rem .52rem;}
+.field-input:focus{outline:none;border-color:var(--gold2);}
+.home-hero{text-align:center;padding:1.6rem 1rem 1rem;}
+.home-hero h1{font-family:'Cinzel',serif;font-size:clamp(1.8rem,5vw,3rem);color:var(--gold);text-shadow:0 0 40px rgba(212,168,71,.3);letter-spacing:.12em;margin-bottom:.3rem;}
+.home-hero p{color:var(--muted);font-style:italic;}
+.ornament{color:var(--gold2);letter-spacing:.4em;margin:.4rem 0;}
+.home-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:.8rem;margin-top:1.2rem;}
+.home-card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1rem .7rem;text-align:center;cursor:pointer;transition:all .2s;}
+.home-card:hover{border-color:var(--gold2);background:rgba(139,90,43,.15);transform:translateY(-3px);}
+.home-card-icon{font-size:1.7rem;margin-bottom:.35rem;}
+.home-card-title{font-family:'Cinzel',serif;font-size:.7rem;color:var(--gold);letter-spacing:.1em;margin-bottom:.2rem;}
+.home-card-desc{font-size:.76rem;color:var(--muted);font-style:italic;line-height:1.35;}
+.dice-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(82px,1fr));gap:.65rem;margin-bottom:1.6rem;}
+.die-btn{background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:.35rem;padding:.3rem;transition:transform .2s;}
+.die-btn:hover{transform:translateY(-3px);}
+.die-btn:active{transform:scale(.95);}
+.die-label{font-family:'Cinzel',serif;font-size:.7rem;color:var(--muted);}
+.die-scene{width:68px;height:68px;}
+.die-scene canvas{width:100%;height:100%;display:block;}
+.result-area{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1rem;text-align:center;margin-bottom:1.2rem;min-height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.result-die-name{font-family:'Cinzel',serif;font-size:.76rem;color:var(--gold2);letter-spacing:.17em;margin-bottom:.25rem;}
+.result-number{font-family:'Cinzel',serif;font-size:4rem;font-weight:700;color:var(--gold);text-shadow:0 0 26px rgba(212,168,71,.5);line-height:1;}
+.result-number.rolling{animation:shimmer .1s infinite;}
+@keyframes shimmer{0%{opacity:1}50%{opacity:.3}100%{opacity:1}}
+.result-flavor{margin-top:.3rem;font-style:italic;color:#6a5535;font-size:.8rem;}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:.85rem;margin-bottom:1.2rem;}
+@media(max-width:480px){.two-col{grid-template-columns:1fr;}}
+.panel{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:.85rem;}
+.panel-title{font-family:'Cinzel',serif;font-size:.68rem;color:var(--gold2);letter-spacing:.13em;text-transform:uppercase;margin-bottom:.55rem;}
+.panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:.55rem;}
+.hist-list{list-style:none;display:flex;flex-wrap:wrap;gap:.32rem;min-height:24px;max-height:120px;overflow-y:auto;}
+.hist-item{background:rgba(90,55,20,.25);border:1px solid var(--border);border-radius:3px;padding:.16rem .42rem;font-family:'Cinzel',serif;font-size:.66rem;color:#a08050;}
+.hist-item span{color:var(--gold);font-weight:600;}
+.calc-display{background:rgba(5,3,1,.85);border:1px solid var(--border);border-radius:5px;padding:.42rem .6rem;margin-bottom:.55rem;text-align:right;min-height:42px;}
+.calc-expr{font-size:.66rem;color:#5a4020;font-family:'Cinzel',serif;min-height:13px;word-break:break-all;}
+.calc-val{font-family:'Cinzel',serif;font-size:1.3rem;color:var(--gold);line-height:1.2;}
+.calc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;}
+.cb{background:rgba(30,18,8,.8);border:1px solid var(--border);color:var(--text);font-family:'Cinzel',serif;font-size:.76rem;padding:.36rem 0;border-radius:3px;cursor:pointer;transition:all .14s;}
+.cb:hover{background:rgba(90,55,20,.4);}
+.cb.op{color:var(--gold);border-color:rgba(212,168,71,.2);}
+.cb.eq{background:rgba(139,90,43,.3);color:var(--gold);border-color:rgba(212,168,71,.38);}
+.cb.clr{color:var(--red);border-color:rgba(192,57,43,.3);}
+.cb.wide{grid-column:span 2;}
+.multi-row{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:.85rem;margin-bottom:1.2rem;}
+.multi-label{font-family:'Cinzel',serif;font-size:.66rem;color:var(--gold2);letter-spacing:.1em;}
+.msel{background:rgba(30,18,8,.9);border:1px solid var(--border);color:var(--text);padding:.28rem .55rem;font-family:'Crimson Text',serif;font-size:.83rem;border-radius:4px;cursor:pointer;}
+.mres{color:#a08050;font-size:.83rem;font-style:italic;}
+.char-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:.85rem;margin-bottom:1rem;}
+.char-card{background:var(--bg2);border:1px solid var(--border);border-radius:9px;padding:.9rem;cursor:pointer;transition:all .2s;}
+.char-card:hover{border-color:var(--gold2);transform:translateY(-2px);}
+.char-card.selected{border-color:var(--gold);background:rgba(212,168,71,.06);}
+.char-avatar{width:44px;height:44px;border-radius:50%;background:rgba(139,90,43,.2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1.4rem;margin-bottom:.55rem;}
+.char-name{font-family:'Cinzel',serif;font-size:.88rem;color:var(--gold);margin-bottom:.18rem;}
+.char-sub{font-size:.76rem;color:var(--muted);font-style:italic;}
+.char-detail{background:var(--bg2);border:1px solid var(--border);border-radius:9px;padding:1.1rem;margin-bottom:1rem;}
+.attr-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.45rem;margin:.65rem 0;}
+.attr-box{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:.4rem;text-align:center;}
+.attr-name{font-family:'Cinzel',serif;font-size:.56rem;color:var(--gold2);letter-spacing:.1em;}
+.attr-val{font-family:'Cinzel',serif;font-size:1.4rem;color:var(--gold);line-height:1.1;}
+.attr-mod{font-size:.7rem;color:var(--muted);}
+.attr-input{width:100%;background:transparent;border:none;text-align:center;font-family:'Cinzel',serif;font-size:1.3rem;color:var(--gold);outline:none;}
+.hp-bar-wrap{margin:.65rem 0;}
+.hp-lbl{font-family:'Cinzel',serif;font-size:.6rem;color:var(--gold2);letter-spacing:.1em;display:flex;justify-content:space-between;margin-bottom:.22rem;}
+.hp-bar{height:11px;background:rgba(30,10,5,.8);border:1px solid var(--border);border-radius:20px;overflow:hidden;}
+.hp-fill{height:100%;background:linear-gradient(90deg,#7a1515,#c0392b);border-radius:20px;transition:width .4s;}
+.hp-controls{display:flex;gap:.5rem;align-items:center;margin-top:.4rem;flex-wrap:wrap;}
+.hp-num{font-family:'Cinzel',serif;font-size:.78rem;color:var(--muted);}
+.hp-input-small{width:52px;background:rgba(10,6,2,.8);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:'Cinzel',serif;font-size:.82rem;padding:.25rem .4rem;text-align:center;}
+.hp-input-small:focus{outline:none;border-color:var(--gold2);}
+.ficha-grid{display:grid;grid-template-columns:1fr 1fr;gap:.85rem;}
+@media(max-width:480px){.ficha-grid{grid-template-columns:1fr;}}
+.camp-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1rem;margin-bottom:.8rem;}
+.camp-header{display:flex;align-items:flex-start;justify-content:space-between;gap:.5rem;margin-bottom:.6rem;}
+.camp-title{font-family:'Cinzel',serif;font-size:.95rem;color:var(--gold);}
+.camp-meta{font-size:.78rem;color:var(--muted);font-style:italic;margin-top:.15rem;}
+.camp-badge{font-family:'Cinzel',serif;font-size:.62rem;border-radius:20px;padding:.18rem .55rem;white-space:nowrap;}
+.camp-badge.dm{background:rgba(212,168,71,.15);border:1px solid rgba(212,168,71,.3);color:var(--gold);}
+.camp-badge.player{background:rgba(58,122,212,.13);border:1px solid rgba(58,122,212,.3);color:#88aaee;}
+.camp-code{font-family:'Cinzel',serif;font-size:.7rem;color:var(--muted);background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:4px;padding:.22rem .55rem;display:inline-flex;align-items:center;gap:.4rem;cursor:pointer;}
+.camp-code:hover{border-color:var(--gold2);color:var(--gold2);}
+.party-list{margin-top:.7rem;border-top:1px solid var(--border);padding-top:.7rem;}
+.party-member{display:flex;align-items:center;gap:.55rem;padding:.35rem 0;border-bottom:1px solid rgba(90,55,20,.15);}
+.party-member:last-child{border-bottom:none;}
+.party-avatar{width:30px;height:30px;border-radius:50%;background:rgba(90,55,20,.25);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0;}
+.party-name{font-family:'Cinzel',serif;font-size:.78rem;color:var(--text);flex:1;min-width:0;}
+.party-char{font-size:.7rem;color:var(--muted);font-style:italic;}
+.party-role{font-family:'Cinzel',serif;font-size:.62rem;border-radius:3px;padding:.12rem .4rem;white-space:nowrap;}
+.party-role.dm{background:rgba(212,168,71,.12);color:var(--gold);}
+.party-role.player{background:rgba(58,122,212,.12);color:#88aaee;}
+.role-sel{background:rgba(10,6,2,.8);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'Cinzel',serif;font-size:.62rem;padding:.1rem .3rem;cursor:pointer;}
+.char-link-btn{font-family:'Cinzel',serif;font-size:.6rem;background:rgba(212,168,71,.1);border:1px solid rgba(212,168,71,.25);color:var(--gold);border-radius:3px;padding:.12rem .45rem;cursor:pointer;white-space:nowrap;}
+.char-link-btn:hover{background:rgba(212,168,71,.2);}
+.char-link-btn.linked{background:rgba(80,180,80,.1);border-color:rgba(80,180,80,.3);color:#80d080;}
+.map-controls{display:flex;flex-wrap:wrap;gap:.55rem;align-items:center;margin-bottom:.9rem;}
+.map-sel{background:rgba(30,18,8,.9);border:1px solid var(--border);color:var(--text);padding:.3rem .6rem;font-family:'Crimson Text',serif;font-size:.83rem;border-radius:4px;cursor:pointer;}
+.map-wrap{border:2px solid rgba(212,168,71,.2);border-radius:12px;overflow:hidden;background:#000;margin-bottom:.7rem;display:flex;justify-content:center;box-shadow:0 0 40px rgba(0,0,0,.9),inset 0 0 20px rgba(0,0,0,.5);}
+.map-wrap canvas{display:block;max-width:100%;}
+.map-legend{display:flex;flex-wrap:wrap;gap:.7rem;padding:.4rem .2rem;}
+.map-leg-item{display:flex;align-items:center;gap:.32rem;font-family:'Cinzel',serif;font-size:.66rem;color:var(--muted);}
+.map-leg-dot{width:11px;height:11px;border-radius:2px;flex-shrink:0;}
+.npc-card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:.9rem;margin-bottom:.65rem;display:flex;gap:.65rem;}
+.npc-avatar{width:40px;height:40px;border-radius:50%;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;background:rgba(90,55,20,.2);}
+.npc-body{flex:1;}
+.npc-name{font-family:'Cinzel',serif;font-size:.92rem;color:var(--gold);}
+.npc-tags{display:flex;flex-wrap:wrap;gap:.28rem;margin:.25rem 0;}
+.npc-tag{background:rgba(90,55,20,.28);border:1px solid var(--border);border-radius:3px;padding:.1rem .42rem;font-family:'Cinzel',serif;font-size:.6rem;color:#a08050;}
+.npc-desc{font-style:italic;color:var(--muted);font-size:.82rem;line-height:1.45;}
+.name-opts{display:flex;flex-wrap:wrap;gap:.38rem;margin-bottom:.75rem;}
+.name-opt{background:var(--bg3);border:1px solid var(--border);color:var(--muted);padding:.26rem .7rem;font-family:'Cinzel',serif;font-size:.66rem;border-radius:4px;cursor:pointer;}
+.name-opt.active{border-color:var(--gold);color:var(--gold);background:rgba(212,168,71,.07);}
+.names-list{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.65rem;}
+.name-pill{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:.26rem .8rem;font-family:'Cinzel',serif;font-size:.8rem;color:var(--text);cursor:pointer;}
+.name-pill:hover{border-color:var(--gold2);color:var(--gold);}
+</style>
+
+<div class="app" id="app">
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-logo"><span class="logo-icon">🐑</span><span class="logo-text">SHEEPKEEPER</span></div>
+    <button class="sidebar-toggle" id="sidebarToggle">☰</button>
+    <ul class="nav-list" id="navList">
+      <li class="nav-item active" data-page="home"><span class="nav-icon">🏰</span><span class="nav-label">Início</span></li>
+      <li class="nav-item" data-page="dados"><span class="nav-icon">🎲</span><span class="nav-label">Dados</span></li>
+      <li class="nav-item" data-page="personagens"><span class="nav-icon">⚔️</span><span class="nav-label">Personagens</span></li>
+      <li class="nav-item" data-page="ficha"><span class="nav-icon">📜</span><span class="nav-label">Nova Ficha</span></li>
+      <li class="nav-item" data-page="campanhas"><span class="nav-icon">📖</span><span class="nav-label">Campanhas</span></li>
+      <li class="nav-item" data-page="mapa"><span class="nav-icon">🗺️</span><span class="nav-label">Mapas</span></li>
+      <li class="nav-item" data-page="npcs"><span class="nav-icon">🧙</span><span class="nav-label">NPCs</span></li>
+      <li class="nav-item" data-page="nomes"><span class="nav-icon">✍️</span><span class="nav-label">Nomes</span></li>
+    </ul>
+  </div>
+  <div class="main">
+    <div class="topbar">
+      <span class="topbar-title" id="topbarTitle">INÍCIO</span>
+      <span class="topbar-sub" id="topbarSub">Mesa de RPG Digital</span>
+    </div>
+    <div class="page" id="pageContent"></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+let personagens=[],campanhas=[],npcs=[];
+let selectedChar=null,editingCharId=null;
+let diceHistory=[],diceRolling=false,dieSystems=[];
+let calcExpr='',calcCurrent='0',calcEvaled=false;
+let nameRace='Humano',nameGender='todos';
+let currentUser={name:'Você',id:'local'};
+const PM={home:{title:'INÍCIO',sub:'Bem-vindo à Taverna'},dados:{title:'DADOS',sub:'Role seus dados'},personagens:{title:'PERSONAGENS',sub:'Fichas armazenadas'},ficha:{title:'FICHA',sub:'Criar ou editar'},campanhas:{title:'CAMPANHAS',sub:'Suas aventuras'},mapa:{title:'GERADOR DE MAPAS',sub:'Crie seu mundo'},npcs:{title:'NPCS',sub:'Habitantes do mundo'},nomes:{title:'NOMES',sub:'Nomes épicos'}};
+
+function showModal(opts){closeModal();const ov=document.createElement('div');ov.className='modal-overlay';ov.id='modalOverlay';ov.innerHTML=`<div class="modal-box ${opts.danger?'danger':''}"><div class="modal-title">${opts.title}</div>${opts.desc?`<div class="modal-desc">${opts.desc}</div>`:''}${opts.body||''}<div class="modal-btns">${opts.danger?`<button class="btn btn-red" id="mOk">${opts.okLabel||'Apagar'}</button><button class="btn btn-gold" onclick="closeModal()">Cancelar</button>`:`<button class="btn btn-gold" id="mOk">${opts.okLabel||'OK'}</button>${opts.cancel!==false?`<button class="btn btn-blue" onclick="closeModal()">Cancelar</button>`:''}`}</div></div>`;document.body.appendChild(ov);if(opts.onOpen)setTimeout(opts.onOpen,30);document.getElementById('mOk').onclick=()=>{if(opts.onOk)opts.onOk();closeModal();};}
+function closeModal(){const ov=document.getElementById('modalOverlay');if(ov)ov.remove();}
+
+function navigate(page){document.querySelectorAll('.nav-item').forEach(el=>el.classList.toggle('active',el.dataset.page===page));document.getElementById('topbarTitle').textContent=PM[page].title;document.getElementById('topbarSub').textContent=PM[page].sub;renderPage(page);}
+document.getElementById('navList').addEventListener('click',e=>{const i=e.target.closest('.nav-item');if(i)navigate(i.dataset.page);});
+document.getElementById('sidebarToggle').addEventListener('click',()=>document.getElementById('sidebar').classList.toggle('collapsed'));
+
+function renderHome(){return`<div class="home-hero"><div class="ornament">⚔ ✦ ⚔</div><h1>Sheepkeeper</h1><p>Mesa de RPG completa — Jogador & Mestre</p><div class="ornament">✦ ✦ ✦</div></div><div class="home-cards">${[['dados','🎲','Dados','Role d4 ao d30 em 3D'],['personagens','⚔️','Personagens','Fichas salvas'],['ficha','📜','Nova Ficha','Criar personagem'],['campanhas','📖','Campanhas','Partys com cargos'],['mapa','🗺️','Mapas','Mapas procedurais'],['npcs','🧙','NPCs','Personagens do mestre'],['nomes','✍️','Nomes','Nomes épicos']].map(([p,i,t,d])=>`<div class="home-card" onclick="navigate('${p}')"><div class="home-card-icon">${i}</div><div class="home-card-title">${t}</div><div class="home-card-desc">${d}</div></div>`).join('')}</div>`;}
+
+// ── DADOS ─────────────────────────────────────
+const DC=[
+  {sides:4, label:'D4',  color:0xd4607a},  // rosa 
+  {sides:6, label:'D6',  color:0xe07830},  // laranja
+  {sides:8, label:'D8',  color:0x8b1a2a},  // vermelho 
+  {sides:10,label:'D10', color:0x2a4a7a},  // azul 
+  {sides:12,label:'D12', color:0x2a5a3a},  // verde 
+  {sides:20,label:'D20', color:0xc8b860},  // amarelo 
+  {sides:30,label:'D30', color:0x20a8b8},  // ciano
+];
+
+function getFlavor(v,m){if(v===1)return"O destino é cruel.";if(v===m)return"CRÍTICO!";if(v>=m*.75)return"Muito bem!";if(v>=m*.4)return"Mediano. Pode funcionar...";return"Os dados são caprichosos.";}
+function buildD10G(){const p=[];for(let i=0;i<5;i++){const a=(i/5)*Math.PI*2-Math.PI/2;p.push(new THREE.Vector3(Math.cos(a)*1.05,.38,Math.sin(a)*1.05));}for(let i=0;i<5;i++){const a=(i/5)*Math.PI*2-Math.PI/2+Math.PI/5;p.push(new THREE.Vector3(Math.cos(a)*1.05,-.38,Math.sin(a)*1.05));}p.push(new THREE.Vector3(0,1.35,0),new THREE.Vector3(0,-1.35,0));const u=p.slice(0,5),l=p.slice(5,10),top=p[10],bot=p[11],v=[];for(let i=0;i<5;i++){const u0=u[i],u1=u[(i+1)%5],l0=l[i],l1=l[(i+1)%5];v.push(top.x,top.y,top.z,u0.x,u0.y,u0.z,u1.x,u1.y,u1.z,u0.x,u0.y,u0.z,l0.x,l0.y,l0.z,u1.x,u1.y,u1.z,u1.x,u1.y,u1.z,l0.x,l0.y,l0.z,l1.x,l1.y,l1.z,bot.x,bot.y,bot.z,l1.x,l1.y,l1.z,l0.x,l0.y,l0.z);}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(v,3));g.computeVertexNormals();return g;}
+function getDG(s){switch(s){case 4:return new THREE.TetrahedronGeometry(1.1);case 6:return new THREE.BoxGeometry(1.6,1.6,1.6);case 8:return new THREE.OctahedronGeometry(1.1);case 10:return buildD10G();case 12:return new THREE.DodecahedronGeometry(1.1);case 20:return new THREE.IcosahedronGeometry(1.1);case 30:return new THREE.IcosahedronGeometry(1.1,1);default:return new THREE.IcosahedronGeometry(1.1);}}
+function createDie(canvas,sides,hexColor){const W=68,H=68;canvas.width=W*devicePixelRatio;canvas.height=H*devicePixelRatio;const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});renderer.setPixelRatio(devicePixelRatio);renderer.setSize(W,H);renderer.setClearColor(0,0);const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(45,1,.1,100);camera.position.set(0,0,4.5);scene.add(new THREE.AmbientLight(0xffffff,.45));const d=new THREE.DirectionalLight(0xfff8f0,1.3);d.position.set(3,5,5);scene.add(d);const r=new THREE.DirectionalLight(0x4466bb,.6);r.position.set(-4,-2,-3);scene.add(r);const rim=new THREE.DirectionalLight(0xffffff,.2);rim.position.set(0,0,-5);scene.add(rim);const geo=getDG(sides),mat=new THREE.MeshPhongMaterial({color:hexColor,shininess:100,specular:new THREE.Color(0xffffff),emissive:new THREE.Color(hexColor).multiplyScalar(.08),side:THREE.DoubleSide}),mesh=new THREE.Mesh(geo,mat);scene.add(mesh);try{const ec=new THREE.Color(hexColor);ec.lerp(new THREE.Color(0xffffff),.35);mesh.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo),new THREE.MeshBasicMaterial({color:ec,transparent:true,opacity:.35})));}catch(e){}let rx=0,ry=0,vx=.008,vy=.012,isR=false,rt=0;function loop(){requestAnimationFrame(loop);if(isR){rt++;const sp=Math.max(.04,.18*Math.exp(-rt*.025));vx=(Math.random()-.5)*sp*2;vy=(Math.random()-.5)*sp*2+sp;rx+=vx;ry+=vy;if(rt>80){isR=false;rt=0;}}else{rx+=vx;ry+=vy;vx*=.98;vy*=.98;if(Math.abs(vx)<.002)vx=.004*(Math.random()>.5?1:-1);if(Math.abs(vy)<.002)vy=.006;}mesh.rotation.x=rx;mesh.rotation.y=ry;renderer.render(scene,camera);}loop();return{roll(){isR=true;rt=0;vx=(Math.random()-.5)*.3;vy=.25;},color:hexColor};}
+function renderDH(){const el=document.getElementById('diceHistory');if(!el)return;el.innerHTML=diceHistory.length===0?'<li style="color:#4a3520;font-style:italic;font-size:.76rem;">Nenhuma rolagem ainda.</li>':diceHistory.map(h=>`<li class="hist-item">${h.l}: <span>${h.v}</span></li>`).join('');}
+function addDH(l,v){diceHistory.unshift({l,v});if(diceHistory.length>20)diceHistory.pop();renderDH();}
+function renderDados(){return`<div class="sec-title">Dados 3D</div><div class="dice-grid" id="diceGrid"></div><div class="result-area" id="diceResult"><div style="color:#4a3520;font-style:italic;">Clique em um dado para rolar...</div></div><div class="two-col"><div class="panel"><div class="panel-head"><div class="panel-title">Histórico</div><button class="btn btn-red" id="clearDH">Apagar</button></div><ul class="hist-list" id="diceHistory"></ul></div><div class="panel"><div class="panel-title">Calculadora</div><div class="calc-display"><div class="calc-expr" id="calcExpr"></div><div class="calc-val" id="calcVal">0</div></div><div class="calc-grid"><button class="cb clr wide" id="calcAC">AC</button><button class="cb op" data-op="%">%</button><button class="cb op" data-op="/">÷</button><button class="cb" data-num="7">7</button><button class="cb" data-num="8">8</button><button class="cb" data-num="9">9</button><button class="cb op" data-op="*">×</button><button class="cb" data-num="4">4</button><button class="cb" data-num="5">5</button><button class="cb" data-num="6">6</button><button class="cb op" data-op="-">−</button><button class="cb" data-num="1">1</button><button class="cb" data-num="2">2</button><button class="cb" data-num="3">3</button><button class="cb op" data-op="+">+</button><button class="cb wide" data-num="0">0</button><button class="cb" data-num=".">.</button><button class="cb eq" id="calcEq">=</button></div></div></div><div class="multi-row"><span class="multi-label">ROLAR MÚLTIPLOS:</span><select class="msel" id="multiCount"><option>2</option><option>3</option><option>4</option><option>5</option></select><select class="msel" id="multiDie"><option value="4">d4</option><option value="6" selected>d6</option><option value="8">d8</option><option value="10">d10</option><option value="12">d12</option><option value="20">d20</option><option value="30">d30</option></select><button class="btn btn-gold" id="multiRollBtn">Rolar ⚄</button><span class="mres" id="multiResult"></span></div>`;}
+function initDados(){dieSystems=[];const grid=document.getElementById('diceGrid');if(!grid)return;DC.forEach((d,i)=>{const btn=document.createElement('button');btn.className='die-btn';const sc=document.createElement('div');sc.className='die-scene';const cv=document.createElement('canvas');cv.style.width='68px';cv.style.height='68px';sc.appendChild(cv);const lb=document.createElement('div');lb.className='die-label';lb.textContent=d.label;btn.appendChild(sc);btn.appendChild(lb);grid.appendChild(btn);setTimeout(()=>{const sys=createDie(cv,d.sides,d.color);dieSystems.push(sys);btn.addEventListener('click',()=>{if(diceRolling)return;diceRolling=true;sys.roll();const ra=document.getElementById('diceResult');if(ra)ra.innerHTML=`<div class="result-die-name">${d.label}</div><div class="result-number rolling">?</div><div class="result-flavor">Rolando...</div>`;const tot=Math.floor(Math.random()*d.sides)+1;setTimeout(()=>{const fl=getFlavor(tot,d.sides),col=tot===d.sides?'#d4a847':tot===1?'#c0392b':'#d4a847';if(ra)ra.innerHTML=`<div class="result-die-name">${d.label}</div><div class="result-number" style="color:${col}">${tot}</div><div class="result-flavor">${fl}</div>`;addDH(d.label,tot);diceRolling=false;},1600);});},40+i*25);});renderDH();document.getElementById('clearDH').addEventListener('click',()=>{diceHistory=[];renderDH();const mr=document.getElementById('multiResult');if(mr)mr.textContent='';});calcExpr='';calcCurrent='0';calcEvaled=false;function upd(){const e=document.getElementById('calcExpr'),v=document.getElementById('calcVal');if(e)e.textContent=calcExpr;if(v)v.textContent=calcCurrent;}document.querySelectorAll('.cb[data-num]').forEach(b=>b.addEventListener('click',()=>{const n=b.dataset.num;if(calcEvaled){calcCurrent='';calcExpr='';calcEvaled=false;}if(n==='.'&&calcCurrent.includes('.'))return;calcCurrent=(calcCurrent==='0'&&n!=='.')?n:calcCurrent+n;upd();}));document.querySelectorAll('.cb[data-op]').forEach(b=>b.addEventListener('click',()=>{calcEvaled=false;const op=b.dataset.op,dp=op==='*'?'×':op==='/'?'÷':op;calcExpr=calcCurrent+' '+dp+' ';calcCurrent='0';upd();}));const eq=document.getElementById('calcEq');if(eq)eq.addEventListener('click',()=>{if(!calcExpr)return;try{const ex=calcExpr.replace('×','*').replace('÷','/')+calcCurrent;const res=Function('"use strict";return('+ex+')')();calcCurrent=parseFloat(res.toFixed(10)).toString();calcExpr=ex+' =';calcEvaled=true;upd();}catch{calcCurrent='Erro';upd();}});const ac=document.getElementById('calcAC');if(ac)ac.addEventListener('click',()=>{calcExpr='';calcCurrent='0';calcEvaled=false;upd();});const mb=document.getElementById('multiRollBtn');if(mb)mb.addEventListener('click',()=>{if(diceRolling)return;const cnt=parseInt(document.getElementById('multiCount').value),sid=parseInt(document.getElementById('multiDie').value),rolls=Array.from({length:cnt},()=>Math.floor(Math.random()*sid)+1),tot=rolls.reduce((a,b)=>a+b,0);const mr=document.getElementById('multiResult');if(mr)mr.textContent=`${cnt}d${sid} → [${rolls.join(', ')}] = ${tot}`;addDH(`${cnt}d${sid}`,tot);const idx=DC.findIndex(d=>d.sides===sid);if(idx>=0&&dieSystems[idx])dieSystems[idx].roll();});}
+
+// ── PERSONAGENS ────────────────────────────────────────────
+const CE={Guerreiro:'⚔️',Mago:'🧙',Ladino:'🗡️',Clérigo:'✝️',Bardo:'🎵',Druida:'🌿',Monge:'👊',Paladino:'🛡️',Bárbaro:'💢',Patrulheiro:'🏹',Feiticeiro:'💫',Bruxo:'👁️'};
+function ce(c){return CE[c]||'⚔️';}
+function mod(v){const m=Math.floor((v-10)/2);return(m>=0?'+':'')+m;}
+function renderPersonagens(){if(!personagens.length)return`<div class="sec-title">Personagens</div><div style="text-align:center;padding:3rem 1rem;"><div style="font-size:3rem;margin-bottom:.8rem;">⚔️</div><div style="font-family:Cinzel,serif;font-size:1rem;color:var(--gold);margin-bottom:.45rem;">Nenhum personagem criado</div><div style="color:var(--muted);font-style:italic;margin-bottom:1.3rem;">Crie sua primeira ficha</div><button class="btn btn-gold" onclick="navigate('ficha')">+ Criar Personagem</button></div>`;return`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.9rem;flex-wrap:wrap;gap:.5rem;"><div class="sec-title" style="margin-bottom:0;">Personagens (${personagens.length})</div><div style="display:flex;gap:.5rem;"><button class="btn btn-gold" onclick="navigate('ficha')">+ Novo</button><button class="btn btn-red" onclick="openDelChars()">🗑 Apagar</button></div></div><div class="char-grid">${personagens.map(p=>`<div class="char-card ${selectedChar===p.id?'selected':''}" onclick="selectChar(${p.id})"><div class="char-avatar">${ce(p.classe)}</div><div class="char-name">${p.nome||'Sem nome'}</div><div class="char-sub">${p.raca||'?'} • ${p.classe||'?'} • Nv ${p.nivel||1}</div><div class="char-sub">${p.alinhamento||''}</div><div style="display:flex;gap:.4rem;margin-top:.5rem;"><button class="btn btn-blue" onclick="event.stopPropagation();editChar(${p.id})">✏ Editar</button></div></div>`).join('')}</div>${selectedChar?renderCharDetail():''}`;}
+function openDelChars(){showModal({title:'Apagar Personagens',danger:true,body:`<div style="max-height:200px;overflow-y:auto;" id="dCL">${personagens.map(p=>`<label style="display:flex;align-items:center;gap:.6rem;padding:.4rem 0;border-bottom:1px solid var(--border);cursor:pointer;"><input type="checkbox" value="${p.id}" style="accent-color:var(--red);width:14px;height:14px;"><span style="font-family:Cinzel,serif;font-size:.78rem;color:var(--text);">${ce(p.classe)} ${p.nome}</span></label>`).join('')}</div>`,okLabel:'Apagar Selecionados',onOk(){const ch=[...document.querySelectorAll('#dCL input:checked')].map(i=>parseInt(i.value));if(!ch.length)return;personagens=personagens.filter(p=>!ch.includes(p.id));if(ch.includes(selectedChar))selectedChar=null;renderPage('personagens');}});}
+function renderCharDetail(){const v=personagens.find(p=>p.id===selectedChar);if(!v)return'';const hpPct=Math.max(0,Math.min(100,Math.round((v.hpCur??v.hp)/v.hp*100)));return`<div class="char-detail"><div style="display:flex;align-items:center;gap:.9rem;margin-bottom:.7rem;flex-wrap:wrap;"><div style="width:52px;height:52px;border-radius:50%;background:rgba(139,90,43,.2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1.7rem;">${ce(v.classe)}</div><div><div style="font-family:Cinzel,serif;font-size:1.15rem;color:var(--gold);">${v.nome}</div><div style="color:var(--muted);font-style:italic;font-size:.82rem;">${v.raca} • ${v.classe} • Nível ${v.nivel}</div><div style="color:var(--muted);font-size:.78rem;">${v.alinhamento} • CA ${v.ca||10}</div></div><button class="btn btn-blue" style="margin-left:auto;" onclick="editChar(${v.id})">✏ Editar</button></div><div class="hp-bar-wrap"><div class="hp-lbl"><span>HP</span><span id="hpText">${v.hpCur??v.hp} / ${v.hp}</span></div><div class="hp-bar"><div class="hp-fill" id="hpFill" style="width:${hpPct}%"></div></div></div><div class="hp-controls"><input type="number" class="hp-input-small" id="hpAmt" value="1" min="1"><button class="btn btn-red" onclick="changeHP(-1)">− Dano</button><button class="btn btn-gold" onclick="changeHP(1)">+ Cura</button><button class="btn btn-blue" onclick="resetHP()">↺ Reset</button><span class="hp-num" id="hpCurD">HP: ${v.hpCur??v.hp}</span></div><div class="attr-grid">${['FOR','DES','CON','INT','SAB','CAR'].map(a=>`<div class="attr-box"><div class="attr-name">${a}</div><div class="attr-val">${v.attrs?.[a]||10}</div><div class="attr-mod">${mod(v.attrs?.[a]||10)}</div></div>`).join('')}</div>${v.personalidade?`<div style="margin-top:.6rem;font-style:italic;color:var(--muted);font-size:.83rem;line-height:1.5;">"${v.personalidade}"</div>`:''}</div>`;}
+function changeHP(dir){const p=personagens.find(x=>x.id===selectedChar);if(!p)return;const amt=parseInt(document.getElementById('hpAmt')?.value)||1;if(p.hpCur===undefined)p.hpCur=p.hp;p.hpCur=Math.max(0,Math.min(p.hp,p.hpCur+(dir*amt)));const pct=Math.round(p.hpCur/p.hp*100);const f=document.getElementById('hpFill'),t=document.getElementById('hpText'),d2=document.getElementById('hpCurD');if(f)f.style.width=pct+'%';if(t)t.textContent=`${p.hpCur} / ${p.hp}`;if(d2)d2.textContent=`HP: ${p.hpCur}`;}
+function resetHP(){const p=personagens.find(x=>x.id===selectedChar);if(!p)return;p.hpCur=p.hp;changeHP(0);}
+function selectChar(id){selectedChar=selectedChar===id?null:id;renderPage('personagens');}
+function editChar(id){editingCharId=id;navigate('ficha');}
+
+// ── FICHA ──────────────────────────────────────────────────
+const CLASSES=['Guerreiro','Mago','Ladino','Clérigo','Bardo','Druida','Monge','Paladino','Bárbaro','Patrulheiro','Feiticeiro','Bruxo','Personalizado'];
+function renderFicha(){const p=editingCharId?personagens.find(x=>x.id===editingCharId):null;const v=(k,def='')=>p?p[k]??def:def;const va=(k)=>p&&p.attrs?p.attrs[k]:10;const isC=p&&!CLASSES.slice(0,-1).includes(p.classe);return`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.9rem;"><div class="sec-title" style="margin-bottom:0;">${p?'Editar':'Criar'} Personagem</div>${p?`<button class="btn btn-blue" onclick="editingCharId=null;renderPage('ficha')">+ Novo em Branco</button>`:''}</div><div class="ficha-grid"><div><div class="field-group"><div class="field-label">Nome</div><input class="field-input" id="fNome" value="${v('nome')}" placeholder="Nome do personagem"></div><div class="field-group"><div class="field-label">Raça</div><input class="field-input" id="fRaca" value="${v('raca')}" placeholder="Humano, Elfo, Anão..."></div><div class="field-group"><div class="field-label">Classe</div><select class="field-input" id="fClasse" onchange="toggleCC(this.value)">${CLASSES.map(c=>`<option value="${c}" ${(isC?'Personalizado':v('classe','Guerreiro'))===c?'selected':''}>${c}</option>`).join('')}</select><input class="field-input" id="fClasseC" placeholder="Nome da classe..." style="margin-top:.3rem;display:${isC?'block':'none'};" value="${isC?v('classe'):''}"></div><div class="field-group"><div class="field-label">Nível</div><input class="field-input" id="fNivel" type="number" min="1" max="20" value="${v('nivel',1)}"></div></div><div><div class="field-group"><div class="field-label">Alinhamento</div><select class="field-input" id="fAlign">${['Leal e Bom','Neutro e Bom','Caótico e Bom','Leal e Neutro','Neutro','Caótico e Neutro','Leal e Mau','Neutro e Mau','Caótico e Mau'].map(a=>`<option ${v('alinhamento')===a?'selected':''}>${a}</option>`).join('')}</select></div><div class="field-group"><div class="field-label">HP Máximo</div><input class="field-input" id="fHp" type="number" min="1" value="${v('hp',10)}"></div><div class="field-group"><div class="field-label">CA (Armadura)</div><input class="field-input" id="fCA" type="number" min="1" value="${v('ca',10)}"></div><div class="field-group"><div class="field-label">Antecedente</div><input class="field-input" id="fBack" value="${v('antecedente')}" placeholder="Soldado, Nobre..."></div></div></div><div class="field-label" style="margin-bottom:.5rem;">Atributos</div><div class="attr-grid">${['FOR','DES','CON','INT','SAB','CAR'].map(a=>`<div class="attr-box"><div class="attr-name">${a}</div><input class="attr-input" type="number" min="1" max="20" value="${va(a)}" id="fa${a}" oninput="updMod('${a}')"><div class="attr-mod" id="fm${a}">${mod(va(a))}</div></div>`).join('')}</div><div class="field-group" style="margin-top:.85rem;"><div class="field-label">Personalidade</div><textarea class="field-input" id="fPers" rows="2" placeholder="Descreva a personalidade...">${v('personalidade')}</textarea></div><div style="display:flex;gap:.65rem;margin-top:.75rem;align-items:center;flex-wrap:wrap;"><button class="btn btn-gold" onclick="salvarFicha()">✦ ${p?'Salvar Edição':'Salvar'}</button>${p?`<button class="btn btn-blue" onclick="editingCharId=null;navigate('personagens')">Cancelar</button>`:''}<span id="fichMsg" style="font-style:italic;color:#5a8a3a;font-size:.8rem;"></span></div>`;}
+function toggleCC(val){const el=document.getElementById('fClasseC');if(el)el.style.display=val==='Personalizado'?'block':'none';}
+function updMod(a){const v=parseInt(document.getElementById('fa'+a)?.value)||10,m=Math.floor((v-10)/2),el=document.getElementById('fm'+a);if(el)el.textContent=(m>=0?'+':'')+m;}
+function salvarFicha(){const nome=document.getElementById('fNome').value.trim();if(!nome){const el=document.getElementById('fichMsg');if(el){el.style.color='#c0392b';el.textContent='Insira um nome!';setTimeout(()=>el.textContent='',2000);}return;}const cr=document.getElementById('fClasse').value,classe=cr==='Personalizado'?(document.getElementById('fClasseC').value.trim()||'Personalizado'):cr;const attrs={};['FOR','DES','CON','INT','SAB','CAR'].forEach(a=>{attrs[a]=parseInt(document.getElementById('fa'+a)?.value)||10;});const data={nome,raca:document.getElementById('fRaca').value,classe,nivel:parseInt(document.getElementById('fNivel').value)||1,alinhamento:document.getElementById('fAlign').value,hp:parseInt(document.getElementById('fHp').value)||10,ca:parseInt(document.getElementById('fCA').value)||10,antecedente:document.getElementById('fBack').value,personalidade:document.getElementById('fPers').value,attrs};if(editingCharId){const idx=personagens.findIndex(p=>p.id===editingCharId);if(idx>=0){const old=personagens[idx];personagens[idx]={...old,...data,hpCur:old.hpCur};selectedChar=editingCharId;editingCharId=null;setTimeout(()=>navigate('personagens'),500);}}else{const np={id:Date.now(),...data,hpCur:data.hp};personagens.push(np);selectedChar=np.id;}const el=document.getElementById('fichMsg');if(el){el.style.color='#5a8a3a';el.textContent='Salvo! ✦';}if(!editingCharId)setTimeout(()=>navigate('personagens'),700);}
+
+// ── CAMPANHAS ──────────────────────────────────────────────
+function genCode(){return Math.floor(1000+Math.random()*9000).toString();}
+function genRoom(){return Math.floor(100+Math.random()*900).toString();}
+function renderCampanhas(){return`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.9rem;flex-wrap:wrap;gap:.5rem;"><div class="sec-title" style="margin-bottom:0;">Campanhas</div><div style="display:flex;gap:.5rem;"><button class="btn btn-gold" onclick="openCreateCamp()">+ Criar</button><button class="btn btn-blue" onclick="openJoinCamp()">🔑 Entrar</button>${campanhas.length?`<button class="btn btn-red" onclick="openDelCamps()">🗑 Apagar</button>`:''}</div></div>${!campanhas.length?`<div style="text-align:center;padding:3rem 1rem;"><div style="font-size:3rem;margin-bottom:.8rem;">📖</div><div style="font-family:Cinzel,serif;color:var(--gold);margin-bottom:.4rem;">Nenhuma campanha ainda</div><div style="color:var(--muted);font-style:italic;margin-bottom:1.2rem;">Crie ou entre em uma campanha</div><div style="display:flex;gap:.6rem;justify-content:center;"><button class="btn btn-gold" onclick="openCreateCamp()">+ Criar</button><button class="btn btn-blue" onclick="openJoinCamp()">🔑 Entrar</button></div></div>`:campanhas.map(renderCampCard).join('')}`;}
+function renderCampCard(c){const me=c.members.find(m=>m.userId===currentUser.id),isDM=me&&me.role==='DM';return`<div class="camp-card"><div class="camp-header"><div><div class="camp-title">📖 ${c.title}</div><div class="camp-meta">${c.meta}</div></div><span class="camp-badge ${isDM?'dm':'player'}">${isDM?'⚔ '+(c.dmTitle||'DM'):'🎮 Player'}</span></div><div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;margin-bottom:.7rem;"><div class="camp-code" onclick="copyCode('${c.roomCode}-${c.password}')">🔑 Sala ${c.roomCode} · Senha: ${c.password} <span style="font-size:.6rem;opacity:.5;">📋</span></div>${isDM?`<button class="btn btn-blue" style="font-size:.6rem;padding:.2rem .5rem;" onclick="openEditDMTitle(${c.id})">✏ Título DM</button>`:''}</div><div class="party-list"><div style="font-family:Cinzel,serif;font-size:.65rem;color:var(--gold2);letter-spacing:.12em;margin-bottom:.5rem;">PARTY (${c.members.length})</div>${c.members.map(m=>{const mChar=m.charId?personagens.find(p=>p.id===m.charId):null;return`<div class="party-member"><div class="party-avatar">${mChar?ce(mChar.classe):m.userId===currentUser.id?'🧑':'👤'}</div><div style="flex:1;min-width:0;"><div class="party-name">${m.name}${m.userId===currentUser.id?' <span style="font-size:.6rem;color:var(--muted);">(você)</span>':''}</div>${mChar?`<div class="party-char">${mChar.nome} · ${mChar.classe} · Nv${mChar.nivel} · HP ${mChar.hpCur??mChar.hp}/${mChar.hp}</div>`:m.userId===currentUser.id&&personagens.length?`<div class="party-char" style="color:var(--gold2);">Sem personagem vinculado</div>`:`<div class="party-char">Sem personagem</div>`}</div>${m.userId===currentUser.id&&personagens.length?`<button class="char-link-btn ${mChar?'linked':''}" onclick="openLinkChar(${c.id})">${mChar?'🔄 Trocar':'+ Vincular'}</button>`:''} ${isDM&&m.userId!==currentUser.id?`<select class="role-sel" onchange="changeRole(${c.id},'${m.userId}',this.value)"><option value="Player" ${m.role==='Player'?'selected':''}>Player</option><option value="DM" ${m.role==='DM'?'selected':''}>DM</option></select>`:`<span class="party-role ${m.role==='DM'?'dm':'player'}">${m.role==='DM'?(c.dmTitle||'DM'):'Player'}</span>`} ${isDM||me?.role==='DM'?`<button class="btn btn-blue" style="font-size:.6rem;padding:.15rem .4rem;" onclick="viewMemberSheet(${c.id},'${m.userId}')">📜</button>`:''}</div>`;}).join('')}</div>${isDM?`<div style="margin-top:.6rem;"><button class="btn btn-gold" style="font-size:.65rem;" onclick="openAddSim(${c.id})">+ Jogador Simulado</button></div>`:''}</div>`;}
+function openLinkChar(campId){if(!personagens.length){showModal({title:'Sem Personagens',desc:'Crie um personagem primeiro.',cancel:false,okLabel:'OK'});return;}showModal({title:'Vincular Personagem',desc:'Escolha seu personagem para esta campanha:',body:`<div style="display:flex;flex-direction:column;gap:.5rem;">${personagens.map(p=>`<div style="display:flex;align-items:center;gap:.7rem;background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:.7rem .9rem;cursor:pointer;transition:all .2s;" onclick="linkCharToCamp(${campId},${p.id})" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'"><div style="font-size:1.5rem;">${ce(p.classe)}</div><div><div style="font-family:Cinzel,serif;font-size:.9rem;color:var(--gold);">${p.nome}</div><div style="font-size:.76rem;color:var(--muted);font-style:italic;">${p.raca} • ${p.classe} • Nv ${p.nivel} • HP ${p.hpCur??p.hp}/${p.hp}</div></div><div style="margin-left:auto;font-family:Cinzel,serif;font-size:.65rem;color:var(--gold2);">CA ${p.ca||10}</div></div>`).join('')}</div>`,cancel:false,okLabel:'Fechar'});}
+function linkCharToCamp(campId,charId){const camp=campanhas.find(c=>c.id===campId);if(!camp)return;const m=camp.members.find(m=>m.userId===currentUser.id);if(m)m.charId=charId;closeModal();renderPage('campanhas');}
+function openCreateCamp(){showModal({title:'Criar Campanha',body:`<div class="field-group"><div class="field-label">Nome da Campanha</div><input class="field-input" id="mCN" placeholder="Ex: A Cripta do Rei Esquecido"></div><div class="field-group"><div class="field-label">Seu nome (como DM)</div><input class="field-input" id="mDN" value="${currentUser.name}" placeholder="Seu nome"></div><div class="field-group"><div class="field-label">Título do DM</div><input class="field-input" id="mDT" placeholder="DM, Mestre..." value="DM"></div><div style="background:rgba(212,168,71,.06);border:1px solid rgba(212,168,71,.2);border-radius:6px;padding:.6rem .8rem;margin-top:.3rem;"><div style="font-family:Cinzel,serif;font-size:.65rem;color:var(--gold2);margin-bottom:.3rem;">CÓDIGO DA SALA</div><div style="font-family:Cinzel,serif;font-size:.9rem;color:var(--gold);" id="mRP">Sala --- · Senha ----</div><div style="font-size:.76rem;color:var(--muted);margin-top:.25rem;font-style:italic;">Compartilhe com seus jogadores</div></div>`,okLabel:'Criar',onOpen(){const room=genRoom(),pass=genCode();window._nr=room;window._np=pass;const el=document.getElementById('mRP');if(el)el.textContent=`Sala ${room} · Senha ${pass}`;},onOk(){const name=document.getElementById('mCN')?.value.trim();if(!name)return;const dmName=document.getElementById('mDN')?.value.trim()||currentUser.name,dmTitle=document.getElementById('mDT')?.value.trim()||'DM';currentUser.name=dmName;campanhas.push({id:Date.now(),title:name,meta:'0 sessões • Recém criada',roomCode:window._nr,password:window._np,ownerId:currentUser.id,dmTitle,members:[{userId:currentUser.id,name:dmName,role:'DM',charId:null}]});renderPage('campanhas');}});}
+function openJoinCamp(){showModal({title:'Entrar em Campanha',body:`<div class="field-group"><div class="field-label">Número da Sala</div><input class="field-input" id="mJR" placeholder="Ex: 342"></div><div class="field-group"><div class="field-label">Senha</div><input class="field-input" id="mJP" placeholder="Ex: 7291"></div><div class="field-group"><div class="field-label">Seu nome</div><input class="field-input" id="mJN" value="${currentUser.name}" placeholder="Seu nome"></div>`,okLabel:'Entrar',onOk(){const room=document.getElementById('mJR')?.value.trim(),pass=document.getElementById('mJP')?.value.trim(),name=document.getElementById('mJN')?.value.trim()||currentUser.name,camp=campanhas.find(c=>c.roomCode===room&&c.password===pass);if(!camp){setTimeout(()=>showModal({title:'Erro',desc:'Sala ou senha incorretos.',cancel:false,okLabel:'OK'}),50);return;}if(!camp.members.find(m=>m.userId===currentUser.id)){currentUser.name=name;camp.members.push({userId:currentUser.id,name,role:'Player',charId:null});}renderPage('campanhas');}});}
+function copyCode(code){navigator.clipboard?.writeText(code).catch(()=>{});showModal({title:'Código Copiado!',desc:`"${code}" — compartilhe com seus jogadores.`,cancel:false,okLabel:'OK'});}
+function changeRole(campId,userId,role){const c=campanhas.find(c=>c.id===campId);if(!c)return;const m=c.members.find(m=>m.userId===userId);if(m)m.role=role;renderPage('campanhas');}
+function openEditDMTitle(campId){const c=campanhas.find(c=>c.id===campId);if(!c)return;showModal({title:'Título do Mestre',body:`<div class="field-group"><div class="field-label">Título</div><input class="field-input" id="mDTE" value="${c.dmTitle||'DM'}" placeholder="DM, Mestre..."></div>`,okLabel:'Salvar',onOk(){c.dmTitle=document.getElementById('mDTE')?.value.trim()||'DM';renderPage('campanhas');}});}
+function openAddSim(campId){const c=campanhas.find(c=>c.id===campId);if(!c)return;showModal({title:'Adicionar Jogador Simulado',body:`<div class="field-group"><div class="field-label">Nome</div><input class="field-input" id="mSN" placeholder="Nome do jogador"></div>`,okLabel:'Adicionar',onOk(){const n=document.getElementById('mSN')?.value.trim();if(!n)return;c.members.push({userId:'sim_'+Date.now(),name:n,role:'Player',charId:null});renderPage('campanhas');}});}
+function viewMemberSheet(campId,userId){const camp=campanhas.find(c=>c.id===campId),member=camp?.members.find(m=>m.userId===userId);if(!member)return;const char=member.charId?personagens.find(p=>p.id===member.charId):null,isDM=camp.members.find(m=>m.userId===currentUser.id)?.role==='DM';showModal({title:`Ficha de ${member.name}`,body:char?`<div style="display:flex;gap:.7rem;align-items:center;margin-bottom:.8rem;"><div style="font-size:2rem;">${ce(char.classe)}</div><div><div style="font-family:Cinzel,serif;color:var(--gold);">${char.nome}</div><div style="font-size:.8rem;color:var(--muted);font-style:italic;">${char.raca} • ${char.classe} • Nv ${char.nivel}</div></div></div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.4rem;margin-bottom:.7rem;">${['FOR','DES','CON','INT','SAB','CAR'].map(a=>`<div style="background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:.35rem;text-align:center;"><div style="font-family:Cinzel,serif;font-size:.55rem;color:var(--gold2);">${a}</div><div style="font-family:Cinzel,serif;font-size:1.2rem;color:var(--gold);">${char.attrs?.[a]||10}</div><div style="font-size:.68rem;color:var(--muted);">${mod(char.attrs?.[a]||10)}</div></div>`).join('')}</div><div style="display:flex;gap:1rem;font-size:.85rem;color:var(--muted);flex-wrap:wrap;margin-bottom:${isDM?'.8rem':'0'};"><span>❤️ HP: <b style="color:var(--text);">${char.hpCur??char.hp}/${char.hp}</b></span><span>🛡️ CA: <b style="color:var(--text);">${char.ca||10}</b></span><span>⚔️ Nível: <b style="color:var(--text);">${char.nivel}</b></span></div>${isDM?`<div style="border-top:1px solid var(--border);padding-top:.7rem;"><div class="field-label" style="margin-bottom:.4rem;">DM: Alterar HP</div><div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;"><input type="number" class="hp-input-small" id="dmHA" value="1" min="1"><button class="btn btn-red" onclick="dmHP(${char.id},-1)">− Dano</button><button class="btn btn-gold" onclick="dmHP(${char.id},1)">+ Cura</button><button class="btn btn-blue" onclick="dmHP(${char.id},0)">↺ Reset</button></div></div>`:''}`:
+`<div style="color:var(--muted);font-style:italic;">Este jogador ainda não vinculou um personagem.</div>`,cancel:false,okLabel:'Fechar'});}
+function dmHP(charId,dir){const char=personagens.find(p=>p.id===charId);if(!char)return;const amt=parseInt(document.getElementById('dmHA')?.value)||1;if(char.hpCur===undefined)char.hpCur=char.hp;if(dir===0)char.hpCur=char.hp;else char.hpCur=Math.max(0,Math.min(char.hp,char.hpCur+(dir*amt)));renderPage('campanhas');setTimeout(()=>{const camp=campanhas.find(c=>c.members.some(m=>m.charId===charId));if(camp){const m=camp.members.find(m=>m.charId===charId);if(m)viewMemberSheet(camp.id,m.userId);}},50);}
+function openDelCamps(){showModal({title:'Apagar Campanhas',danger:true,body:`<div style="max-height:200px;overflow-y:auto;" id="dCampL">${campanhas.map(c=>`<label style="display:flex;align-items:center;gap:.6rem;padding:.4rem 0;border-bottom:1px solid var(--border);cursor:pointer;"><input type="checkbox" value="${c.id}" style="accent-color:var(--red);width:14px;height:14px;"><span style="font-family:Cinzel,serif;font-size:.78rem;color:var(--text);">📖 ${c.title}</span></label>`).join('')}</div>`,okLabel:'Apagar Selecionadas',onOk(){const ch=[...document.querySelectorAll('#dCampL input:checked')].map(i=>parseInt(i.value));if(!ch.length)return;campanhas=campanhas.filter(c=>!ch.includes(c.id));renderPage('campanhas');}});}
+
+// ══════════════════════════════════════════════
+// MAPA — versão 5
+// ══════════════════════════════════════════════
+function renderMapa(){return`<div class="sec-title">Gerador de Mapas</div><div class="map-controls"><select class="map-sel" id="mapType"><option value="dungeon">Dungeon</option><option value="floresta">Floresta</option><option value="cidade">Cidade</option><option value="caverna">Caverna</option><option value="templo">Templo</option><option value="fortaleza">Fortaleza</option></select><select class="map-sel" id="mapSize"><option value="20">Pequeno</option><option value="30" selected>Médio</option><option value="42">Grande</option></select><button class="btn btn-gold" onclick="generateMap()">🗺 Gerar Mapa</button></div><div class="map-wrap"><canvas id="mapCanvas" width="560" height="560"></canvas></div><div class="map-legend" id="mapLegend"></div>`;}
+
+const THEMES={
+  dungeon:{bg:'#080510',wall1:'#1a1228',wall2:'#120c1c',wall3:'#0e0918',floor1:'#26203a',floor2:'#302848',floor3:'#1e1830',water:'#0c1a38',doorC:'#6a3818',doorA:'#d4a847',torch:'rgba(255,155,45,.22)',roomG:'rgba(255,200,80,.055)',bossG:'rgba(230,55,35,.11)',secG:'rgba(120,75,220,.1)',startG:'rgba(70,220,110,.085)',fog:'rgba(5,3,10,.82)',accent:'#d4a847',piller:'#0e0918'},
+  floresta:{bg:'#030805',wall1:'#070e06',wall2:'#060c05',wall3:'#040a04',floor1:'#0e1e0c',floor2:'#122410',floor3:'#0a1808',water:'#082028',doorC:'#284618',doorA:'#7dc830',torch:'rgba(150,255,70,.14)',roomG:'rgba(100,220,50,.055)',bossG:'rgba(210,170,35,.1)',secG:'rgba(50,170,100,.1)',startG:'rgba(60,255,100,.08)',fog:'rgba(2,6,2,.78)',accent:'#7dc830',piller:'#060c05'},
+  cidade:{bg:'#0c0a07',wall1:'#201c16',wall2:'#181410',wall3:'#120f0a',floor1:'#2c2618',floor2:'#383020',floor3:'#242018',water:'#101820',doorC:'#78561e',doorA:'#d4a847',torch:'rgba(255,175,55,.18)',roomG:'rgba(255,215,90,.045)',bossG:'rgba(200,55,35,.1)',secG:'rgba(130,95,230,.09)',startG:'rgba(90,215,110,.075)',fog:'rgba(8,6,4,.72)',accent:'#d4a847',piller:'#141008'},
+  caverna:{bg:'#06050a',wall1:'#0e0c14',wall2:'#0a0810',wall3:'#08060c',floor1:'#1c1824',floor2:'#22202c',floor3:'#181620',water:'#0a1228',doorC:'#382848',doorA:'#9090c8',torch:'rgba(110,110,210,.15)',roomG:'rgba(90,90,190,.055)',bossG:'rgba(190,40,40,.11)',secG:'rgba(170,75,210,.1)',startG:'rgba(70,210,190,.085)',fog:'rgba(4,3,8,.85)',accent:'#9090c8',piller:'#08060c'},
+  templo:{bg:'#080608',wall1:'#160e1a',wall2:'#100a14',wall3:'#0c0810',floor1:'#221620',floor2:'#2a1c28',floor3:'#1c1018',water:'#160c30',doorC:'#68445e',doorA:'#e0c050',torch:'rgba(255,215,70,.18)',roomG:'rgba(240,195,75,.055)',bossG:'rgba(195,55,55,.11)',secG:'rgba(175,75,195,.1)',startG:'rgba(110,195,110,.08)',fog:'rgba(6,4,6,.8)',accent:'#e0c050',piller:'#0c0810'},
+  fortaleza:{bg:'#080808',wall1:'#141212',wall2:'#0e0c0c',wall3:'#0a0808',floor1:'#201e1e',floor2:'#28242',floor3:'#1a1818',water:'#0c1418',doorC:'#503020',doorA:'#c07830',torch:'rgba(255,130,35,.17)',roomG:'rgba(195,135,55,.05)',bossG:'rgba(195,45,25,.11)',secG:'rgba(115,75,175,.09)',startG:'rgba(90,195,110,.08)',fog:'rgba(4,4,4,.85)',accent:'#c07830',piller:'#0a0808'},
+};
+
+function hash(x,y,s){return((Math.sin(x*127.1+y*311.7+s*17.3)*43758.5453)%1+1)%1;}
+
+function generateMap(){
+  const canvas=document.getElementById('mapCanvas');if(!canvas)return;
+  const type=document.getElementById('mapType').value;
+  const size=parseInt(document.getElementById('mapSize').value);
+  const ctx=canvas.getContext('2d');
+  const W=560,H=560,cell=Math.floor(W/size);
+  canvas.width=W;canvas.height=H;
+  const T=THEMES[type]||THEMES.dungeon;
+
+  // ── Grid + rooms ──────────────────────────────────────
+  const grid=Array.from({length:size},()=>Array(size).fill(0));
+  const rooms=[];
+  const maxR=type==='cidade'?15:type==='floresta'?8:11;
+  for(let att=0;att<100&&rooms.length<maxR;att++){
+    const rw=Math.floor(Math.random()*5)+3,rh=Math.floor(Math.random()*4)+3;
+    const rx=Math.floor(Math.random()*(size-rw-2))+1,ry=Math.floor(Math.random()*(size-rh-2))+1;
+    let ok=true;
+    for(const r of rooms){if(rx<r.x+r.w+2&&rx+rw+2>r.x&&ry<r.y+r.h+2&&ry+rh+2>r.y){ok=false;break;}}
+    if(ok){const sp=rooms.length===0?'start':rooms.length===1?'end':Math.random()<.1?'boss':Math.random()<.12?'secret':Math.random()<.08?'water':null;rooms.push({x:rx,y:ry,w:rw,h:rh,sp,px:rx*cell,py:ry*cell,cx:(rx+rw/2)*cell,cy:(ry+rh/2)*cell});for(let y=ry;y<ry+rh;y++)for(let x=rx;x<rx+rw;x++)grid[y][x]=sp==='water'?2:1;}
+  }
+  const doors=[];
+  for(let i=1;i<rooms.length;i++){
+    const a=rooms[i-1],b=rooms[i];let cx=Math.floor(a.x+a.w/2),cy=Math.floor(a.y+a.h/2);
+    const bx=Math.floor(b.x+b.w/2),by=Math.floor(b.y+b.h/2);
+    const mx=Math.floor((cx+bx)/2),my=Math.floor((cy+by)/2);
+    while(cx!==bx){if(!grid[cy][cx])grid[cy][cx]=1;cx+=cx<bx?1:-1;}
+    while(cy!==by){if(!grid[cy][cx])grid[cy][cx]=1;cy+=cy<by?1:-1;}
+    if(grid[my]?.[mx]===1)doors.push({x:mx,y:my});
+  }
+
+  // ── Background ────────────────────────────────────────
+  ctx.fillStyle=T.bg;ctx.fillRect(0,0,W,H);
+
+  // ── Walls ─────────────────────────────────────────────
+  for(let y=0;y<size;y++)for(let x=0;x<size;x++){
+    if(grid[y][x])continue;
+    let adj=false;
+    for(let dy=-1;dy<=1&&!adj;dy++)for(let dx=-1;dx<=1&&!adj;dx++){const ny=y+dy,nx=x+dx;if(ny>=0&&ny<size&&nx>=0&&nx<size&&grid[ny][nx])adj=true;}
+    if(!adj)continue;
+    const px=x*cell,py=y*cell;
+    // Base
+    ctx.fillStyle=T.wall1;ctx.fillRect(px,py,cell,cell);
+    if(cell<4)continue;
+    // Brick pattern offset per row
+    const row=y%2,bx2=row?Math.floor(cell*.5):0;
+    // Top brick
+    ctx.fillStyle=T.wall2;ctx.fillRect(px+bx2,py+1,Math.min(cell-bx2,cell)-1,Math.floor(cell*.43)-1);
+    // Bottom brick — offset opposite
+    const bx3=row?0:Math.floor(cell*.5);
+    ctx.fillStyle=T.wall2;ctx.fillRect(px+bx3,py+Math.floor(cell*.55),Math.min(cell-bx3,cell)-1,Math.floor(cell*.43)-1);
+    // Mortar horizontal
+    ctx.fillStyle='rgba(0,0,0,.55)';ctx.fillRect(px,py+Math.floor(cell*.5),cell,1);
+    ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(px,py,1,cell);ctx.fillRect(px+cell-1,py,1,cell);ctx.fillRect(px,py,cell,1);ctx.fillRect(px,py+cell-1,cell,1);
+    // Mortar vertical inside each brick
+    ctx.fillStyle='rgba(0,0,0,.28)';ctx.fillRect(px+Math.floor(cell*.5)+bx2,py+1,1,Math.floor(cell*.43)-1);
+    // Subtle noise variation
+    const nv=hash(x,y,3);
+    if(nv>.65){ctx.fillStyle='rgba(255,255,255,.025)';ctx.fillRect(px+1,py+1,cell-2,Math.floor(cell*.43));}
+    if(nv<.18){ctx.fillStyle='rgba(0,0,0,.08)';ctx.fillRect(px,py,cell,cell);}
+  }
+
+  // ── Floors ────────────────────────────────────────────
+  for(let y=0;y<size;y++)for(let x=0;x<size;x++){
+    const gv=grid[y][x];if(!gv)continue;
+    const px=x*cell,py=y*cell;
+    if(gv===2){
+      // Water
+      ctx.fillStyle=T.water;ctx.fillRect(px,py,cell,cell);
+      const wh=hash(x,y,9);
+      if(wh>.4){ctx.fillStyle='rgba(80,160,255,.07)';ctx.fillRect(px+1,py+Math.floor(cell*.28),cell-2,1);}
+      if(wh<.3){ctx.fillStyle='rgba(80,160,255,.05)';ctx.fillRect(px+1,py+Math.floor(cell*.62),cell-2,1);}
+    } else {
+      const nv=hash(x,y,5);
+      ctx.fillStyle=nv<.3?T.floor1:nv<.65?T.floor2:T.floor3;
+      ctx.fillRect(px,py,cell,cell);
+      if(cell>=4){ctx.strokeStyle='rgba(0,0,0,.18)';ctx.lineWidth=.4;ctx.strokeRect(px+.3,py+.3,cell-.6,cell-.6);}
+      // Crack
+      if(hash(x,y,17)>.83&&cell>=6){ctx.strokeStyle='rgba(0,0,0,.13)';ctx.lineWidth=.5;ctx.beginPath();const ox=px+cell*.15+hash(x,y,1)*cell*.4,oy=py+cell*.2+hash(x,y,2)*cell*.35;ctx.moveTo(ox,oy);ctx.lineTo(ox+hash(x,y,3)*cell*.4,oy+hash(x,y,4)*cell*.38);ctx.stroke();}
+      // Stain
+      if(hash(x,y,97)>.9){ctx.fillStyle='rgba(0,0,0,.05)';ctx.beginPath();ctx.ellipse(px+cell*.5,py+cell*.5,cell*.35,cell*.25,hash(x,y,6)*Math.PI,0,Math.PI*2);ctx.fill();}
+    }
+  }
+
+  // ── Wall depth shadows ────────────────────────────────
+  for(let y=0;y<size;y++)for(let x=0;x<size;x++){
+    if(!grid[y][x])continue;
+    const px=x*cell,py=y*cell;
+    const sh=(dir,x0,y0,x1,y1,str)=>{const sg=ctx.createLinearGradient(x0,y0,x1,y1);sg.addColorStop(0,`rgba(0,0,0,${str})`);sg.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=sg;ctx.fillRect(px,py,cell,cell);};
+    if(y>0&&!grid[y-1][x])sh(0,px,py,px,py+Math.min(cell*.65,9),.52);
+    if(x>0&&!grid[y][x-1])sh(1,px,py,px+Math.min(cell*.5,7),py,.38);
+    if(y<size-1&&!grid[y+1]?.[x])sh(2,px,py+cell,px,py+cell-Math.min(cell*.35,5),.2);
+  }
+
+  // ── Room ambient glows ────────────────────────────────
+  rooms.forEach(r=>{
+    const {px,py,cx,cy,sp}=r,rw=r.w*cell,rh=r.h*cell;
+    if(sp!=='water'){
+      const gc=sp==='start'?T.startG:sp==='boss'?T.bossG:sp==='secret'?T.secG:T.roomG;
+      const g=ctx.createRadialGradient(cx,cy,0,cx,cy,Math.max(rw,rh)*.75);
+      g.addColorStop(0,gc);g.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.fillStyle=g;ctx.fillRect(px,py,rw,rh);
+    }
+    // Room border
+    ctx.strokeStyle=sp==='start'?'rgba(70,220,110,.22)':sp==='boss'?'rgba(220,55,35,.25)':sp==='secret'?'rgba(130,80,220,.22)':sp==='water'?'rgba(40,110,200,.18)':'rgba(212,168,71,.06)';
+    ctx.lineWidth=.8;ctx.strokeRect(px+.5,py+.5,rw-1,rh-1);
+  });
+
+  // ── Pillars ───────────────────────────────────────────
+  rooms.forEach(r=>{
+    if(r.w<5||r.h<4||r.sp==='water')return;
+    [[r.x+1,r.y+1],[r.x+r.w-2,r.y+1],[r.x+1,r.y+r.h-2],[r.x+r.w-2,r.y+r.h-2]].forEach(([tx,ty])=>{
+      if(grid[ty]?.[tx]!==1)return;
+      const ppx=tx*cell,ppy=ty*cell,pc=cell-2;
+      // Pillar body — gradient for 3D look
+      const pg=ctx.createLinearGradient(ppx+1,ppy+1,ppx+pc,ppy+pc);
+      pg.addColorStop(0,T.wall1);pg.addColorStop(.4,T.wall2);pg.addColorStop(1,T.piller);
+      ctx.fillStyle=pg;ctx.fillRect(ppx+1,ppy+1,pc,pc);
+      // Pillar highlight
+      ctx.fillStyle='rgba(255,255,255,.05)';ctx.fillRect(ppx+1,ppy+1,pc,Math.floor(pc*.3));
+      ctx.fillStyle='rgba(255,255,255,.02)';ctx.fillRect(ppx+1,ppy+1,Math.floor(pc*.3),pc);
+      // Pillar border
+      ctx.strokeStyle=T.doorA;ctx.lineWidth=.5;ctx.globalAlpha=.3;ctx.strokeRect(ppx+1.5,ppy+1.5,pc-1,pc-1);ctx.globalAlpha=1;
+      // Torch glow — soft radial
+      const tg=ctx.createRadialGradient(ppx+cell*.5,ppy+cell*.5,0,ppx+cell*.5,ppy+cell*.5,cell*3.2);
+      tg.addColorStop(0,T.torch);tg.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.fillStyle=tg;ctx.fillRect(ppx-cell*2.8,ppy-cell*2.8,cell*6.6,cell*6.6);
+    });
+  });
+
+  // ── Room icons & decorations ──────────────────────────
+  rooms.forEach((r,i)=>{
+    const {cx,cy,sp}=r;
+    ctx.save();ctx.font=`${Math.max(cell*.85,8)}px serif`;ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.shadowColor='rgba(0,0,0,.95)';ctx.shadowBlur=7;
+    if(sp==='start'){ctx.fillStyle='#40e070';ctx.fillText('✦',cx,cy);}
+    else if(sp==='end'){ctx.fillStyle='#e0c040';ctx.fillText('⬛',cx,cy);}
+    else if(sp==='boss'){ctx.fillStyle='#e03828';ctx.fillText('💀',cx,cy);}
+    else if(sp==='secret'){ctx.fillStyle='#b070e0';ctx.fillText('?',cx,cy);}
+    else if(type==='templo'&&i%3===0){ctx.fillStyle=T.accent;ctx.fillText('†',cx,cy);}
+    else if(type==='cidade'&&i%2===0){ctx.fillStyle=T.accent;ctx.fillText('⌂',cx,cy);}
+    else if(type==='fortaleza'&&i%3===0){ctx.fillStyle=T.accent;ctx.fillText('⚑',cx,cy);}
+    ctx.shadowBlur=0;ctx.restore();
+  });
+
+  // ── Doors ─────────────────────────────────────────────
+  doors.forEach(({x,y})=>{
+    if(grid[y]?.[x]!==1)return;
+    const dpx=x*cell+cell*.5,dpy=y*cell+cell*.5,dr=Math.max(cell*.32,3);
+    const dg=ctx.createRadialGradient(dpx,dpy,0,dpx,dpy,cell*2.2);
+    dg.addColorStop(0,'rgba(212,168,71,.15)');dg.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=dg;ctx.fillRect(dpx-cell*2.2,dpy-cell*2.2,cell*4.4,cell*4.4);
+    ctx.beginPath();ctx.arc(dpx,dpy,dr,0,Math.PI*2);ctx.fillStyle=T.doorC;ctx.fill();
+    ctx.strokeStyle=T.doorA;ctx.lineWidth=.9;ctx.stroke();
+    ctx.strokeStyle=T.doorA;ctx.lineWidth=.65;ctx.globalAlpha=.65;
+    ctx.beginPath();ctx.moveTo(dpx-dr*.55,dpy);ctx.lineTo(dpx+dr*.55,dpy);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(dpx,dpy-dr*.55);ctx.lineTo(dpx,dpy+dr*.55);ctx.stroke();
+    ctx.globalAlpha=1;
+  });
+
+  // ── Grid overlay ──────────────────────────────────────
+  ctx.strokeStyle=T.fog.replace('.82','0.022').replace('.78','0.022').replace('.72','0.022').replace('.85','0.022').replace('.8','0.022');
+  ctx.strokeStyle='rgba(255,255,255,.02)';ctx.lineWidth=.25;
+  for(let i=0;i<=W;i+=cell){ctx.beginPath();ctx.moveTo(i,0);ctx.lineTo(i,H);ctx.stroke();}
+  for(let i=0;i<=H;i+=cell){ctx.beginPath();ctx.moveTo(0,i);ctx.lineTo(W,i);ctx.stroke();}
+
+  // ── Vignette ──────────────────────────────────────────
+  const vg=ctx.createRadialGradient(W*.5,H*.5,.05,W*.5,H*.5,W*.58);
+  vg.addColorStop(.5,'rgba(0,0,0,0)');vg.addColorStop(1,T.fog);
+  ctx.fillStyle=vg;ctx.fillRect(0,0,W,H);
+
+  // ── Decorative border frame ───────────────────────────
+  // Outer golden frame
+  for(let pass=0;pass<3;pass++){
+    const margin=pass*4+2;
+    ctx.strokeStyle=T.doorA;ctx.lineWidth=pass===1?1.5:.6;ctx.globalAlpha=pass===1?.18:pass===0?.08:.04;
+    ctx.strokeRect(margin,margin,W-margin*2,H-margin*2);
+  }
+  ctx.globalAlpha=1;
+  // Corner ornaments
+  const cornSize=14;const corners=[[2,2],[W-2,2],[2,H-2],[W-2,H-2]];
+  corners.forEach(([cx2,cy2],ci)=>{
+    ctx.save();ctx.translate(cx2,cy2);ctx.rotate((ci===1||ci===2)?Math.PI/2*(ci===1?1:2):ci===2?-Math.PI/2:0);
+    ctx.strokeStyle=T.doorA;ctx.lineWidth=1;ctx.globalAlpha=.35;
+    ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(cornSize,0);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(0,cornSize);ctx.stroke();
+    ctx.beginPath();ctx.arc(0,0,5,0,Math.PI*.5);ctx.stroke();
+    ctx.restore();
+  });
+
+  // ── COMPASS ───────────────────────────────────
+  const CX=W-42,CY=H-42,CR=30;
+  ctx.save();ctx.translate(CX,CY);
+
+  // Outer glow
+  const cGlow=ctx.createRadialGradient(0,0,CR*.5,0,0,CR+15);
+  cGlow.addColorStop(0,`rgba(${type==='dungeon'?'212,168,71':type==='floresta'?'120,200,50':type==='caverna'?'140,140,200':type==='templo'?'220,195,70':type==='fortaleza'?'195,120,48':'212,168,71'},.12)`);
+  cGlow.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=cGlow;ctx.fillRect(-CR-15,-CR-15,(CR+15)*2,(CR+15)*2);
+
+  // Background disc with gradient
+  const cbg=ctx.createRadialGradient(0,0,0,0,0,CR+4);
+  cbg.addColorStop(0,'rgba(20,14,8,.95)');cbg.addColorStop(1,'rgba(8,5,3,.98)');
+  ctx.fillStyle=cbg;ctx.beginPath();ctx.arc(0,0,CR+5,0,Math.PI*2);ctx.fill();
+
+  // Outer decorative ring
+  ctx.strokeStyle=T.doorA;ctx.lineWidth=1.2;ctx.globalAlpha=.45;ctx.beginPath();ctx.arc(0,0,CR+2,0,Math.PI*2);ctx.stroke();
+  // Second ring
+  ctx.lineWidth=.5;ctx.globalAlpha=.2;ctx.beginPath();ctx.arc(0,0,CR-3,0,Math.PI*2);ctx.stroke();
+  // Inner ring
+  ctx.lineWidth=.4;ctx.globalAlpha=.12;ctx.beginPath();ctx.arc(0,0,CR*.6,0,Math.PI*2);ctx.stroke();
+
+  // 16-point tick marks
+  for(let i=0;i<16;i++){
+    ctx.save();ctx.rotate(i*Math.PI/8);
+    const isMaj=i%4===0,isMin=i%2===0;
+    ctx.strokeStyle=T.doorA;ctx.lineWidth=isMaj?1:isMin?.6:.4;ctx.globalAlpha=isMaj?.5:isMin?.28:.15;
+    ctx.beginPath();ctx.moveTo(0,-(CR-2));ctx.lineTo(0,-(CR+(isMaj?4:isMin?2:1)));ctx.stroke();
+    ctx.restore();
+  }
+  ctx.globalAlpha=1;
+
+  // Intercardinal lines (NE, SE, SW, NW) — dashed
+  [45,135,225,315].forEach(deg=>{
+    ctx.save();ctx.rotate(deg*Math.PI/180);ctx.strokeStyle=T.doorA;ctx.lineWidth=.4;ctx.globalAlpha=.15;
+    ctx.setLineDash([1.5,2]);ctx.beginPath();ctx.moveTo(0,-CR*.55);ctx.lineTo(0,-CR*.9);ctx.stroke();ctx.setLineDash([]);
+    ctx.restore();
+  });
+
+  // Cardinal spokes
+  [0,90,180,270].forEach(deg=>{
+    ctx.save();ctx.rotate(deg*Math.PI/180);ctx.strokeStyle=T.doorA;ctx.lineWidth=.5;ctx.globalAlpha=.22;
+    ctx.beginPath();ctx.moveTo(0,-CR*.55);ctx.lineTo(0,-CR*.95);ctx.stroke();ctx.restore();
+  });
+  ctx.globalAlpha=1;
+
+  // N arrow — red with gold edge
+  ctx.save();
+  const nArrow=[{x:0,y:-CR+6},{x:-4.5,y:-2},{x:0,y:-5},{x:4.5,y:-2}];
+  ctx.beginPath();ctx.moveTo(nArrow[0].x,nArrow[0].y);nArrow.slice(1).forEach(p=>ctx.lineTo(p.x,p.y));ctx.closePath();
+  const nGrad=ctx.createLinearGradient(0,-CR,0,-2);nGrad.addColorStop(0,'#e03020');nGrad.addColorStop(1,'#a01810');ctx.fillStyle=nGrad;ctx.fill();
+  ctx.strokeStyle='rgba(255,100,80,.4)';ctx.lineWidth=.5;ctx.stroke();
+  ctx.restore();
+
+  // S arrow — silver/white
+  ctx.save();
+  const sArrow=[{x:0,y:CR-6},{x:-4.5,y:2},{x:0,y:5},{x:4.5,y:2}];
+  ctx.beginPath();ctx.moveTo(sArrow[0].x,sArrow[0].y);sArrow.slice(1).forEach(p=>ctx.lineTo(p.x,p.y));ctx.closePath();
+  const sGrad=ctx.createLinearGradient(0,CR,0,2);sGrad.addColorStop(0,'rgba(220,220,220,.5)');sGrad.addColorStop(1,'rgba(120,120,120,.25)');ctx.fillStyle=sGrad;ctx.fill();
+  ctx.restore();
+
+  // E & W small diamonds
+  [90,270].forEach(deg=>{
+    ctx.save();ctx.rotate(deg*Math.PI/180);
+    ctx.beginPath();ctx.moveTo(0,-(CR-6));ctx.lineTo(-3,-CR+CR*.4);ctx.lineTo(0,-(CR*.38));ctx.lineTo(3,-CR+CR*.4);ctx.closePath();
+    ctx.fillStyle=T.doorA;ctx.globalAlpha=.35;ctx.fill();ctx.restore();
+  });
+  ctx.globalAlpha=1;
+
+  // Center jewel
+  const jewel=ctx.createRadialGradient(0,0,0,0,0,5);
+  jewel.addColorStop(0,'rgba(255,240,180,.9)');jewel.addColorStop(.5,T.doorA);jewel.addColorStop(1,'rgba(100,60,10,.8)');
+  ctx.fillStyle=jewel;ctx.beginPath();ctx.arc(0,0,4,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='rgba(255,220,100,.5)';ctx.lineWidth=.6;ctx.stroke();
+
+  // Cardinal labels with shadow
+  const labelR=CR-9;
+  [['N',0,-labelR,'#ff5540'],['S',0,labelR+2,T.doorA],['O',-labelR-1,1.5,T.doorA],['L',labelR+1,1.5,T.doorA]].forEach(([txt,lx,ly,col])=>{
+    ctx.save();ctx.shadowColor='rgba(0,0,0,.9)';ctx.shadowBlur=4;
+    ctx.fillStyle=col;ctx.font=`bold 8px Cinzel,serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.globalAlpha=.9;ctx.fillText(txt,lx,ly);
+    ctx.restore();
+  });
+  ctx.restore();
+
+  // ── Watermark ─────────────────────────────────────────
+  ctx.save();ctx.globalAlpha=.035;ctx.font=`bold ${cell*1.6}px Cinzel,serif`;ctx.fillStyle=T.doorA;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(type.toUpperCase(),W*.5,H*.5);ctx.restore();
+
+  // ── Legend ────────────────────────────────────────────
+  const leg=document.getElementById('mapLegend');
+  if(leg){const hW=rooms.some(r=>r.sp==='water'),hB=rooms.some(r=>r.sp==='boss'),hS=rooms.some(r=>r.sp==='secret');leg.innerHTML=`<div class="map-leg-item"><div class="map-leg-dot" style="background:#40e070;border-radius:50%"></div>Entrada</div><div class="map-leg-item"><div class="map-leg-dot" style="background:#e0c040;border-radius:50%"></div>Saída</div>${hB?`<div class="map-leg-item"><div class="map-leg-dot" style="background:#e03828;border-radius:50%"></div>Chefe</div>`:''} ${hS?`<div class="map-leg-item"><div class="map-leg-dot" style="background:#b070e0;border-radius:50%"></div>Secreta</div>`:''} ${hW?`<div class="map-leg-item"><div class="map-leg-dot" style="background:${T.water}"></div>Água</div>`:''}<div class="map-leg-item"><div class="map-leg-dot" style="background:${T.doorC};border-radius:50%"></div>Porta</div><div class="map-leg-item" style="margin-left:auto;opacity:.45;">${rooms.length} salas · ${doors.length} portas</div>`;}
+}
+
+// ── NPCS ──────────────────────────────────────────────────
+const ND={racas:['Humano','Elfo','Anão','Halfling','Gnomo','Meio-Elfo','Tiefling','Draconato'],classes:['Ferreiro','Taberneiro','Guarda','Mercador','Clérigo','Ladrão','Sábio','Fazendeiro','Nobre','Caçador'],tracos:['Fala muito alto','Nunca olha nos olhos','Ri de tudo','Desconfiado','Coleciona objetos','Faz perguntas filosóficas','Sempre com pressa','Conta histórias antigas'],motivacoes:['Quer enriquecer','Protege um segredo','Busca vingança','Cuida da família','Serve a um deus','Quer poder','Busca redenção','Sobreviver'],pers:['Corajoso e impulsivo','Calmo e calculista','Alegre e otimista','Sombrio e reservado','Sarcástico e inteligente','Honesto até demais','Covarde mas esperto','Leal acima de tudo'],nomes:{Humano:{m:['Aldric','Torin','Bram','Marcus','Edwin'],f:['Mara','Seraphina','Lyra','Elena','Celia']},Elfo:{m:['Aethen','Caladorn','Therion'],f:['Aelindra','Caladwen','Sylvara']},Anão:{m:['Durgin','Thorek','Grimbok'],f:['Helga','Bilda','Varga']},Halfling:{m:['Pippo','Merry'],f:['Rosie','Daisy']},Gnomo:{m:['Fizzwidget','Cogsworth'],f:['Tinkle','Whirly']},['Meio-Elfo']:{m:['Varen'],f:['Lysha']},Tiefling:{m:['Malphas'],f:['Zorah']},Draconato:{m:['Kriv'],f:['Balasar']}},emojis:{Humano:'🧑',Elfo:'🧝',Anão:'⛏️',Halfling:'🌿',Gnomo:'⚙️',['Meio-Elfo']:'🌟',Tiefling:'😈',Draconato:'🐉'}};
+function rnd(a){return a[Math.floor(Math.random()*a.length)];}
+function gNPC(){const r=rnd(ND.racas),pool=ND.nomes[r]||ND.nomes.Humano,g=Math.random()>.5?'m':'f';return{id:Date.now()+Math.random(),nome:rnd(pool[g]||pool.m),raca:r,classe:rnd(ND.classes),idade:Math.floor(Math.random()*50)+18,traco:rnd(ND.tracos),motiv:rnd(ND.motivacoes),pers:rnd(ND.pers),emoji:ND.emojis[r]||'🧑'};}
+function renderNPCs(){return`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.9rem;"><div class="sec-title" style="margin-bottom:0;">Gerador de NPCs</div>${npcs.length?`<button class="btn btn-red" onclick="showModal({title:'Apagar NPCs',danger:true,desc:'Apagar todos os NPCs?',okLabel:'Apagar',onOk(){npcs=[];renderPage('npcs');}})">Apagar Todos</button>`:''}</div><button class="btn btn-gold" id="genNpcBtn" style="margin-bottom:.9rem;">🧙 Gerar NPC</button><div id="npcList">${npcs.map(n=>`<div class="npc-card" id="npc_${n.id}"><div class="npc-avatar">${n.emoji}</div><div class="npc-body"><div style="display:flex;justify-content:space-between;"><div class="npc-name">${n.nome}</div><button class="btn btn-red" onclick="showModal({title:'Apagar ${n.nome}?',danger:true,okLabel:'Apagar',onOk(){npcs=npcs.filter(x=>x.id!==${n.id});const el=document.getElementById('npc_${n.id}');if(el)el.remove();}})">✕</button></div><div class="npc-tags"><span class="npc-tag">${n.raca}</span><span class="npc-tag">${n.classe}</span><span class="npc-tag">${n.idade} anos</span></div><div class="npc-desc"><b style="color:var(--gold2);font-style:normal;">Traço:</b> ${n.traco}<br><b style="color:var(--gold2);font-style:normal;">Motivação:</b> ${n.motiv}<br><b style="color:var(--gold2);font-style:normal;">Pers.:</b> ${n.pers}</div></div></div>`).join('')}</div>`;}
+function initNPCs(){const btn=document.getElementById('genNpcBtn');if(btn)btn.addEventListener('click',()=>{npcs.unshift(gNPC());if(npcs.length>8)npcs.pop();const l=document.getElementById('npcList');if(l)l.innerHTML=npcs.map(n=>`<div class="npc-card"><div class="npc-avatar">${n.emoji}</div><div class="npc-body"><div class="npc-name">${n.nome}</div><div class="npc-tags"><span class="npc-tag">${n.raca}</span><span class="npc-tag">${n.classe}</span><span class="npc-tag">${n.idade} anos</span></div><div class="npc-desc">${n.traco} · ${n.motiv}</div></div></div>`).join('');});}
+
+// ── NOMES ─────────────────────────────────────────────────
+const NAMES={Humano:{m:['Aldric','Torin','Bram','Marcus','Edwin','Garrett','Roland','Dorian'],f:['Mara','Seraphina','Lyra','Elena','Celia','Rowan','Tessa','Brynn']},Elfo:{m:['Aethen','Caladorn','Therion','Erathis','Sylvan','Lorien','Mirivar','Faelar'],f:['Aelindra','Caladwen','Sylvara','Miraniel','Faelyn','Elowen','Lyriath','Anara']},Anão:{m:['Durgin','Thorek','Grimbok','Baldur','Drukkar','Borin','Dolgan','Thrain'],f:['Helga','Bilda','Varga','Marta','Thordis','Hilda','Brynja','Sigrid']},Halfling:{m:['Pippo','Merry','Cob','Wilbin','Tobold','Largo','Odo','Fosco'],f:['Rosie','Daisy','Primula','Peony','Amaranta','Celandine','Lobelia','Esme']},Eldritch:{m:['Zorah','Malphas','Serath','Vorn','Xareth','Kael','Mordain','Zarov'],f:['Scoria','Vesper','Nyria','Xyla','Zara','Morvaine','Seriva','Dreath']},Draconato:{m:['Kriv','Torinn','Balasar','Drix','Ghesh','Heskan','Medrash','Patrin'],f:['Akra','Biri','Daar','Farideh','Harann','Havilar','Jheri','Kava']},};
+function renderNomes(){return`<div class="sec-title">Gerador de Nomes</div><div class="name-opts" id="raceOpts">${Object.keys(NAMES).map(r=>`<button class="name-opt ${r===nameRace?'active':''}" data-race="${r}">${r}</button>`).join('')}</div><div class="name-opts" id="genderOpts"><button class="name-opt ${nameGender==='todos'?'active':''}" data-gender="todos">Todos</button><button class="name-opt ${nameGender==='m'?'active':''}" data-gender="m">Masculino</button><button class="name-opt ${nameGender==='f'?'active':''}" data-gender="f">Feminino</button></div><button class="btn btn-gold" id="genNamesBtn">✍ Gerar Nomes</button><div class="names-list" id="namesList"></div>`;}
+function initNomes(){document.querySelectorAll('#raceOpts .name-opt').forEach(b=>b.addEventListener('click',()=>{nameRace=b.dataset.race;document.querySelectorAll('#raceOpts .name-opt').forEach(x=>x.classList.remove('active'));b.classList.add('active');}));document.querySelectorAll('#genderOpts .name-opt').forEach(b=>b.addEventListener('click',()=>{nameGender=b.dataset.gender;document.querySelectorAll('#genderOpts .name-opt').forEach(x=>x.classList.remove('active'));b.classList.add('active');}));const btn=document.getElementById('genNamesBtn');if(!btn)return;btn.addEventListener('click',()=>{const pool=NAMES[nameRace]||NAMES.Humano;let list=[];if(nameGender==='m'||nameGender==='todos')list=[...list,...pool.m];if(nameGender==='f'||nameGender==='todos')list=[...list,...pool.f];const picks=[...list].sort(()=>Math.random()-.5).slice(0,10);const nl=document.getElementById('namesList');if(nl)nl.innerHTML=picks.map(n=>`<div class="name-pill">${n}</div>`).join('');});}
+
+// ── RENDER ────────────────────────────────────────────────
+function renderPage(page){
+  const el=document.getElementById('pageContent');if(!el)return;
+  switch(page){
+    case 'home':el.innerHTML=renderHome();break;
+    case 'dados':el.innerHTML=renderDados();setTimeout(()=>initDados(),50);break;
+    case 'personagens':el.innerHTML=renderPersonagens();break;
+    case 'ficha':el.innerHTML=renderFicha();setTimeout(()=>['FOR','DES','CON','INT','SAB','CAR'].forEach(a=>updMod(a)),50);break;
+    case 'campanhas':el.innerHTML=renderCampanhas();break;
+    case 'mapa':el.innerHTML=renderMapa();setTimeout(generateMap,100);break;
+    case 'npcs':el.innerHTML=renderNPCs();setTimeout(initNPCs,50);break;
+    case 'nomes':el.innerHTML=renderNomes();setTimeout(initNomes,50);break;
+  }
+}
+renderPage('home');
+</script>
+
+</body>
+</html>
